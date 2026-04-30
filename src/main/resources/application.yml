@@ -11,6 +11,8 @@ spring:
       client:
         stdio:
           servers-configuration: classpath:mcp-servers.json
+        toolcallback:
+          enabled: true  # ← 关键配置！
   data:
     redis:
       host: localhost

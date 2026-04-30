@@ -5,7 +5,6 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.example.fitaiagent.agent.ReActAgent;
 import org.example.fitaiagent.agent.model.AgentState;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class ToolCallAgent extends ReActAgent {
+public class ToolCallAgent extends ReActAgent{
 
     // 可用的工具
     private final ToolCallback[] availableTools;
@@ -55,6 +54,11 @@ public class ToolCallAgent extends ReActAgent {
      */
     @Override
     public boolean think() {
+        // 在 ToolCallAgent 的 think() 方法中添加日志
+        log.info("可用的工具列表:");
+        for (ToolCallback tool : availableTools) {
+            log.info("工具名称: {}, 描述: {}", tool.getToolDefinition().name(), tool.getToolDefinition().description());
+        }
         // 如果存在下一步提示，将其添加到消息列表
         if (getNextStepPrompt() != null && !getNextStepPrompt().isEmpty()) {
             UserMessage userMessage = new UserMessage(getNextStepPrompt());

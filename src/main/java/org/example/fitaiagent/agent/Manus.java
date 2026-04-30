@@ -1,16 +1,12 @@
 package org.example.fitaiagent.agent;
 
 import org.example.fitaiagent.advisor.MyLogAdvisor;
-import org.example.fitaiagent.agent.ToolCallAgent;
-import org.example.fitaiagent.tools.AskHumanTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
-@Scope("prototype")  // 改为原型 Bean，每次注入都是新实例
 public class Manus extends ToolCallAgent {
     public Manus(ToolCallback[] allTools, ChatModel dashscopeChatModel) {
         super(allTools);
@@ -35,3 +31,4 @@ public class Manus extends ToolCallAgent {
         this.setChatClient(chatClient);
     }
 }
+

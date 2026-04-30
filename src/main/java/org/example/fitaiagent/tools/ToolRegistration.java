@@ -1,6 +1,6 @@
 package org.example.fitaiagent.tools;
 
-import org.example.fitaiagent.tools.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Configuration
 public class ToolRegistration {
 
@@ -30,22 +31,19 @@ public class ToolRegistration {
         TerminalOperationTool terminalOperationTool = new TerminalOperationTool();
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
         TerminateTool terminateTool = new TerminateTool();
-        AskHumanTool askHumanTool = new AskHumanTool();
 
-        List<ToolCallback> allToolsList = new ArrayList<>();
-
-        allToolsList.addAll(List.of(ToolCallbacks.from(
+        List<ToolCallback> allToolsList = new ArrayList<>(List.of(ToolCallbacks.from(
                 fileOperationTool,
                 webSearchTool,
                 webScrapingTool,
                 resourceDownloadTool,
                 terminalOperationTool,
                 pdfGenerationTool,
-                terminateTool,
-                askHumanTool
+                terminateTool
         )));
 
         if (mcpToolCallbackProvider != null) {
+            log.info("开始注入MCP");
             ToolCallback[] mcpTools = mcpToolCallbackProvider.getToolCallbacks();
             if (mcpTools != null && mcpTools.length > 0) {
                 allToolsList.addAll(List.of(mcpTools));

@@ -26,7 +26,9 @@ public class FitAppVectorStoreConfig {
         SimpleVectorStore simpleVectorStore = SimpleVectorStore.builder(dashScopeEmbeddingModel).build();
         List<Document> documents = textSplitter.splitChineseText();
         //List<Document> enrichedDocuments = keywordMetadataEnricher.enrichDocuments(documents);
-        simpleVectorStore.add(documents);
+        if (documents != null && !documents.isEmpty()) {
+            simpleVectorStore.add(documents);
+        }
         return simpleVectorStore;
     }
 
