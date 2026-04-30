@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
@@ -55,10 +56,8 @@ public class FitAiController {
     // 使用 Spring 原型 Bean 方式
     @GetMapping("/manus/chat")
     public Map<String, Object> manusChat(String message, String chatId) {
-        // 从 Spring 容器获取新的 Manus 实例（每次都是新的）
         Manus manus = applicationContext.getBean(Manus.class);
 
-        // 保存到活跃列表，供 resume 接口使用
         activeAgents.put(chatId, manus);
 
         String result = manus.run(message);
@@ -73,6 +72,15 @@ public class FitAiController {
             response.put("result", result);
         }
         return response;
+    }
+
+    @GetMapping(value = "/manus/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter manusChatStream(@RequestParam String message, @RequestParam String chatId) {
+        Manus manus = applicationContext.getBean(Manus.class);
+
+        activeAgents.put(chatId, manus);
+
+        return manus.runStream(message, chatId);
     }
 
 
