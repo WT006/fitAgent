@@ -1,6 +1,9 @@
 # Fit AI Agent（fitagent）
 
 面向运动健康场景的 AI 应用：支持每日打卡、AI 规划 30 天计划，以及两种 AI 对话能力（健康咨询 / 超级智能体）。
+<img width="745" height="721" alt="image" src="https://github.com/user-attachments/assets/56e8c8fd-8a58-4cbc-b847-f64709618e59" />
+<img width="753" height="536" alt="image" src="https://github.com/user-attachments/assets/a62e4f90-2b2b-42b9-a1f9-769ed0e0fd49" />
+
 
 ## 功能概览
 
