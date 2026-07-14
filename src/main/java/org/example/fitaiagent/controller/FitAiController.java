@@ -3,19 +3,18 @@ package org.example.fitaiagent.controller;
 import jakarta.annotation.Resource;
 import org.example.fitaiagent.agent.Manus;
 import org.example.fitaiagent.app.FitApp;
+import org.example.fitaiagent.common.BaseResponse;
+import org.example.fitaiagent.common.ResultUtils;
+import org.example.fitaiagent.model.vo.ChatHistoryMessageVO;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/fitai")
@@ -48,6 +47,14 @@ public class FitAiController {
     @GetMapping(value = "/fitapp/chat/stream",produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> chatStream(String message, String chatId) {
         return fitApp.doChatByStream(message, chatId);
+    }
+
+    /**
+     * 获取健康咨询会话历史（刷新页面后恢复）
+     */
+    @GetMapping("/fitapp/chat/history")
+    public BaseResponse<List<ChatHistoryMessageVO>> chatHistory(@RequestParam String chatId) {
+        return ResultUtils.success(fitApp.listHistory(chatId));
     }
 
 

@@ -3,6 +3,11 @@ spring:
     name: fit-ai-agent
   profiles:
     active: local
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/fit_agent?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 2006
   ai:
     chat:
       options:
@@ -12,17 +17,22 @@ spring:
         stdio:
           servers-configuration: classpath:mcp-servers.json
         toolcallback:
-          enabled: true  # ← 关键配置！
+          enabled: true
   data:
     redis:
       host: localhost
       port: 6379
       database: 0
+mybatis-flex:
+  mapper-locations: classpath*:/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: false
+  global-config:
+    print-banner: false
 server:
   port: 8122
   servlet:
     context-path: /api
-# springdoc-openapi????
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -34,7 +44,6 @@ springdoc:
     - group: 'default'
       paths-to-match: '/**'
       packages-to-scan: org.example.fitaiagent.controller
-# knife4j???????????????
 knife4j:
   enable: true
   setting:

@@ -1,5 +1,6 @@
 package org.example.fitaiagent.tools;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
@@ -14,10 +15,13 @@ import java.util.List;
 
 @Slf4j
 @Configuration
+@RequiredArgsConstructor
 public class ToolRegistration {
 
     @Value("${search-api.api-key}")
     private String searchApiKey;
+
+    private final PDFGenerationTool pdfGenerationTool;
 
     @Autowired(required = false)
     private ToolCallbackProvider mcpToolCallbackProvider;
@@ -29,10 +33,11 @@ public class ToolRegistration {
         WebScrapingTool webScrapingTool = new WebScrapingTool();
         ResourceDownloadTool resourceDownloadTool = new ResourceDownloadTool();
         TerminalOperationTool terminalOperationTool = new TerminalOperationTool();
-        PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
         TerminateTool terminateTool = new TerminateTool();
 
-        List<ToolCallback> allToolsList = new ArrayList<>(List.of(ToolCallbacks.from(
+        List<ToolCallback> allToolsList = new ArrayList<>();
+
+        allToolsList.addAll(List.of(ToolCallbacks.from(
                 fileOperationTool,
                 webSearchTool,
                 webScrapingTool,

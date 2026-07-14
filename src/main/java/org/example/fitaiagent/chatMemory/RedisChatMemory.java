@@ -2,7 +2,7 @@ package org.example.fitaiagent.chatMemory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.example.fitaiagent.pojo.ChatEntity;
+import org.example.fitaiagent.model.pojo.ChatEntity;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.data.redis.core.RedisTemplate;

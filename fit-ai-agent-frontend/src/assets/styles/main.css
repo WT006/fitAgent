@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-primary: #10b981;
+  --color-primary-dark: #059669;
+  --color-primary-light: #6ee7b7;
+  --color-mint: #a7f3d0;
+  --color-teal: #14b8a6;
+  --color-surface: #ffffff;
+  --color-background: #f0fdf4;
+  --color-background-alt: #ecfdf5;
+  --color-text: #064e3b;
+  --color-text-secondary: #047857;
+  --color-text-muted: #6b7280;
+  --color-border: #d1fae5;
+  --color-ai: #6366f1;
+  --font-heading: 'Lora', 'PingFang SC', 'Microsoft YaHei', serif;
+  --font-body: 'Raleway', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+    color: var(--color-text);
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
+    min-height: 100dvh;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white/80 backdrop-blur-sm border border-border shadow-sm;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-primary-dark focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 py-2.5 text-sm font-medium text-text transition-all duration-200 hover:bg-background-alt focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-border bg-white px-4 py-3 text-sm text-text placeholder:text-text-muted transition-colors duration-200 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+  }
+}

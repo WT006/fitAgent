@@ -5,6 +5,9 @@ import org.example.fitaiagent.constant.FileConstant;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
+/**
+ * 文件操作工具
+ */
 public class FileOperationTool {
 
     private final String FILE_DIR = FileConstant.FILE_SAVE_DIR + "/file";

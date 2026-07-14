@@ -24,11 +24,11 @@ public class MyLogAdvisor implements CallAdvisor, StreamAdvisor {
     }
 
     private void logResponse(ChatClientResponse chatClientResponse) {
-        log.info("response:{}", chatClientResponse.chatResponse().getResult().getOutput().getText());
+        //log.info("response:{}", chatClientResponse.chatResponse().getResult().getOutput().getText());
     }
 
     private void logRequest(ChatClientRequest chatClientRequest) {
-        log.info("request:{}", chatClientRequest.prompt().getContents().toString());
+        //log.info("request:{}", chatClientRequest.prompt().getContents().toString());
     }
 
     @Override

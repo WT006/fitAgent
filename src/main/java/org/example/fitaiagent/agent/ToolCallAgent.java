@@ -1,6 +1,7 @@
 package org.example.fitaiagent.agent;
 
-import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -17,66 +18,48 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class ToolCallAgent extends ReActAgent{
+public class ToolCallAgent extends ReActAgent {
 
-    // 可用的工具
+    /** 写入下一轮 LLM 上下文的单条工具结果上限，过大易导致后续 function.arguments 非法 */
+    private static final int MAX_TOOL_RESULT_CHARS = 2500;
+
     private final ToolCallback[] availableTools;
 
-    // 保存了工具调用信息的响应
     private ChatResponse toolCallChatResponse;
 
-    // 工具调用管理者
     private final ToolCallingManager toolCallingManager;
 
-    // 禁用内置的工具调用机制，自己维护上下文
     private final ChatOptions chatOptions;
 
     public ToolCallAgent(ToolCallback[] availableTools) {
         super();
         this.availableTools = availableTools;
         this.toolCallingManager = ToolCallingManager.builder().build();
-        // 禁用 Spring AI 内置的工具调用机制，自己维护选项和消息上下文
         this.chatOptions = DashScopeChatOptions.builder()
                 .internalToolExecutionEnabled(false)
                 .build();
     }
 
-    /**
-     * 处理当前状态并决定下一步行动
-     *
-     * @return 是否需要执行行动
-     */
     @Override
     public boolean think() {
-        // 在 ToolCallAgent 的 think() 方法中添加日志
-        log.info("可用的工具列表:");
-        for (ToolCallback tool : availableTools) {
-            log.info("工具名称: {}, 描述: {}", tool.getToolDefinition().name(), tool.getToolDefinition().description());
-        }
-        // 如果存在下一步提示，将其添加到消息列表
-        if (getNextStepPrompt() != null && !getNextStepPrompt().isEmpty()) {
-            UserMessage userMessage = new UserMessage(getNextStepPrompt());
-            getMessageList().add(userMessage);
-        }
+        appendNextStepPromptOnce();
         List<Message> messageList = getMessageList();
         Prompt prompt = new Prompt(messageList, chatOptions);
         try {
-            // 获取带工具选项的响应
             ChatResponse chatResponse = getChatClient().prompt(prompt)
                     .system(getSystemPrompt())
                     .toolCallbacks(availableTools)
                     .call()
                     .chatResponse();
-            // 记录响应，用于 Act
             this.toolCallChatResponse = chatResponse;
             AssistantMessage assistantMessage = chatResponse.getResult().getOutput();
-            // 输出提示信息
             String result = assistantMessage.getText();
             List<AssistantMessage.ToolCall> toolCallList = assistantMessage.getToolCalls();
             log.info(getName() + "的思考: " + result);
@@ -88,53 +71,159 @@ public class ToolCallAgent extends ReActAgent{
                     )
                     .collect(Collectors.joining("\n"));
             log.info(toolCallInfo);
+
+            // 过滤非法 arguments，避免下一轮请求被 DashScope 400
+            List<AssistantMessage.ToolCall> validCalls = toolCallList.stream()
+                    .filter(this::hasValidJsonArguments)
+                    .toList();
+            if (!validCalls.isEmpty() && validCalls.size() != toolCallList.size()) {
+                log.warn("{} 丢弃了 {} 个非法 arguments 的工具调用",
+                        getName(), toolCallList.size() - validCalls.size());
+            }
+
             if (toolCallList.isEmpty()) {
-                // 只有不调用工具时，才记录助手消息
                 getMessageList().add(assistantMessage);
                 return false;
-            } else {
-                // 需要调用工具时，无需记录助手消息，因为调用工具时会自动记录
-                return true;
             }
+            if (validCalls.isEmpty()) {
+                getMessageList().add(new AssistantMessage(
+                        "工具参数格式无效，已跳过本轮工具调用。请用 JSON 对象形式传参后重试。"));
+                return false;
+            }
+            // 若存在非法调用，重建仅含合法 toolCalls 的响应较复杂；此处仅在全部合法时继续 act
+            if (validCalls.size() != toolCallList.size()) {
+                getMessageList().add(new AssistantMessage(
+                        "部分工具参数不是合法 JSON，已中止本轮工具执行。请继续并以 JSON 传参。"));
+                return false;
+            }
+            return true;
         } catch (Exception e) {
             log.error(getName() + "的思考过程遇到了问题: " + e.getMessage());
             getMessageList().add(
-                    new AssistantMessage("处理时遇到错误: " + e.getMessage()));
+                    new AssistantMessage("处理时遇到错误: " + summarizeError(e.getMessage())));
             return false;
         }
     }
 
-
-    /**
-     * 执行工具调用并处理结果
-     *
-     * @return 执行结果
-     */
     @Override
     public String act() {
         if (!toolCallChatResponse.hasToolCalls()) {
             return "没有工具调用";
         }
-        // 调用工具
         Prompt prompt = new Prompt(getMessageList(), chatOptions);
         ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, toolCallChatResponse);
-        // 记录消息上下文，conversationHistory 已经包含了助手消息和工具调用返回的结果
-        setMessageList(toolExecutionResult.conversationHistory());
-        // 当前工具调用的结果
-        ToolResponseMessage toolResponseMessage = (ToolResponseMessage) CollUtil.getLast(toolExecutionResult.conversationHistory());
-        String results = toolResponseMessage.getResponses().stream()
+        List<Message> history = toolExecutionResult.conversationHistory();
+        setMessageList(compactConversationHistory(history));
+
+        ToolResponseMessage toolResponseMessage = findLastToolResponse(getMessageList());
+        if (toolResponseMessage == null) {
+            toolResponseMessage = findLastToolResponse(history);
+        }
+        if (toolResponseMessage == null) {
+            return "工具执行完成";
+        }
+
+        String resultsForLog = toolResponseMessage.getResponses().stream()
                 .map(response -> "工具 " + response.name() + " 完成了它的任务！结果: " + response.responseData())
                 .collect(Collectors.joining("\n"));
-        // 判断是否调用了终止工具
+        // 前端只展示简短状态；PDF 成功时保留 downloadKey 供下载按钮解析
+        String resultsForClient = toolResponseMessage.getResponses().stream()
+                .map(this::formatToolResultForClient)
+                .collect(Collectors.joining("\n"));
+
         boolean terminateToolCalled = toolResponseMessage.getResponses().stream()
                 .anyMatch(response -> "doTerminate".equals(response.name()));
         if (terminateToolCalled) {
             setState(AgentState.FINISHED);
         }
-        log.info(results);
-        return results;
-
+        log.info(resultsForLog);
+        return resultsForClient;
     }
 
-}
+    private String formatToolResultForClient(ToolResponseMessage.ToolResponse response) {
+        String data = StrUtil.blankToDefault(response.responseData(), "");
+        if (data.contains("downloadKey=")) {
+            return data;
+        }
+        if (StrUtil.startWithIgnoreCase(data, "Error") || data.contains("Error generating")
+                || data.contains("执行失败") || data.contains("not recognized")) {
+            return "tool=" + response.name() + " status=failed";
+        }
+        return "tool=" + response.name() + " status=done";
+    }
 
+    private ToolResponseMessage findLastToolResponse(List<Message> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return null;
+        }
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            Message message = messages.get(i);
+            if (message instanceof ToolResponseMessage toolResponseMessage) {
+                return toolResponseMessage;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 每轮只保留一条 nextStepPrompt，避免用户消息重复堆叠撑爆上下文
+     */
+    private void appendNextStepPromptOnce() {
+        String next = getNextStepPrompt();
+        if (StrUtil.isBlank(next)) {
+            return;
+        }
+        getMessageList().removeIf(m -> m instanceof UserMessage um && next.equals(um.getText()));
+        getMessageList().add(new UserMessage(next));
+    }
+
+    private boolean hasValidJsonArguments(AssistantMessage.ToolCall toolCall) {
+        String args = toolCall.arguments();
+        if (StrUtil.isBlank(args)) {
+            // 无参工具偶发返回空串；视为 "{}"
+            return true;
+        }
+        String trimmed = args.trim();
+        if ("{}".equals(trimmed) || "[]".equals(trimmed) || "null".equalsIgnoreCase(trimmed)) {
+            return true;
+        }
+        return JSONUtil.isTypeJSONObject(trimmed) || JSONUtil.isTypeJSONArray(trimmed);
+    }
+
+    private List<Message> compactConversationHistory(List<Message> history) {
+        List<Message> compacted = new ArrayList<>(history.size());
+        for (Message message : history) {
+            if (message instanceof ToolResponseMessage toolResponseMessage) {
+                List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses().stream()
+                        .map(this::compactToolResponse)
+                        .toList();
+                compacted.add(ToolResponseMessage.builder().responses(responses).build());
+            } else {
+                compacted.add(message);
+            }
+        }
+        return compacted;
+    }
+
+    private ToolResponseMessage.ToolResponse compactToolResponse(ToolResponseMessage.ToolResponse response) {
+        String data = response.responseData();
+        if (data == null || data.length() <= MAX_TOOL_RESULT_CHARS || data.contains("downloadKey=")) {
+            return response;
+        }
+        return new ToolResponseMessage.ToolResponse(
+                response.id(),
+                response.name(),
+                data.substring(0, MAX_TOOL_RESULT_CHARS) + "…(已截断，完整细节可按需再次查询)"
+        );
+    }
+
+    private String summarizeError(String message) {
+        if (StrUtil.isBlank(message)) {
+            return "未知错误";
+        }
+        if (message.contains("function.arguments")) {
+            return "模型返回的工具参数不是合法 JSON（DashScope InvalidParameter）。请换种说法重试，或简化任务步骤。";
+        }
+        return message.length() > 200 ? message.substring(0, 200) + "…" : message;
+    }
+}

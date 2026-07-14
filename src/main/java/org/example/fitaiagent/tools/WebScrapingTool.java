@@ -7,6 +7,9 @@ import org.springframework.ai.tool.annotation.ToolParam;
 
 import java.io.IOException;
 
+/**
+ *抓取网页内容
+ */
 public class WebScrapingTool {
 
     @Tool(description = "Scrape the content of a web page")

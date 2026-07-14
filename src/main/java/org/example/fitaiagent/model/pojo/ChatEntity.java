@@ -1,4 +1,4 @@
-package org.example.fitaiagent.pojo;
+package org.example.fitaiagent.model.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

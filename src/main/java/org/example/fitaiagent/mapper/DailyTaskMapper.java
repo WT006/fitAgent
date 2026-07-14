@@ -1,0 +1,12 @@
+package org.example.fitaiagent.mapper;
+
+import com.mybatisflex.core.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+import org.example.fitaiagent.model.entity.DailyTask;
+
+/**
+ * 每日任务 映射层
+ */
+@Mapper
+public interface DailyTaskMapper extends BaseMapper<DailyTask> {
+}
