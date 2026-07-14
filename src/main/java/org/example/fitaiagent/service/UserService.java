@@ -40,6 +40,11 @@ public interface UserService extends IService<User> {
     User getLoginUser(HttpServletRequest request);
 
     /**
+     * 根据裸 Token 获取用户（供 EventSource 等无法设置 Header 的场景）
+     */
+    User getLoginUserByToken(String token);
+
+    /**
      * 用户注销（客户端清除 Token 即可，服务端返回成功）
      *
      * @param request 请求

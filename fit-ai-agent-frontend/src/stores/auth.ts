@@ -29,6 +29,9 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = null
       user.value = null
       removeToken()
+      // 避免下一账号复用上一账号的会话 UI 状态
+      const { useChatStore } = await import('@/stores/chat')
+      useChatStore().resetOnLogout()
     }
   }
 

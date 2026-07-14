@@ -14,4 +14,12 @@ export interface ChatHistoryMessage {
   createTime: string
 }
 
+/** 会话列表项 */
+export interface ChatSessionItem {
+  chatId: string
+  title: string
+  createTime: string
+  updateTime: string
+}
+
 export type ChatTab = 'fitapp' | 'manus'

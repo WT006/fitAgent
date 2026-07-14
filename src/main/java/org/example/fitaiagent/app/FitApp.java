@@ -1,11 +1,19 @@
 package org.example.fitaiagent.app;
 
+import cn.hutool.core.util.StrUtil;
+import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.example.fitaiagent.advisor.MyLogAdvisor;
 import org.example.fitaiagent.chatMemory.DBChatMemory;
+import org.example.fitaiagent.exception.ErrorCode;
+import org.example.fitaiagent.exception.ThrowUtils;
+import org.example.fitaiagent.mapper.ChatSessionMapper;
 import org.example.fitaiagent.model.entity.ChatMessage;
+import org.example.fitaiagent.model.entity.ChatSession;
+import org.example.fitaiagent.model.entity.User;
 import org.example.fitaiagent.model.vo.ChatHistoryMessageVO;
+import org.example.fitaiagent.model.vo.ChatSessionVO;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
@@ -19,6 +27,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -27,16 +36,14 @@ public class FitApp {
 
     private static final int HISTORY_LIMIT = 100;
 
-    //本地知识库
     @Resource
     private VectorStore fitAppVectorStore;
 
-//    //云知识库
-//    @Resource
-//    private Advisor fitAppRagCloudAdvisor;
-
     @Resource
     private ToolCallbackProvider toolCallbackProvider;
+
+    @Resource
+    private ChatSessionMapper chatSessionMapper;
 
     private final ChatClient chatClient;
     private final DBChatMemory dbChatMemory;
@@ -50,16 +57,7 @@ public class FitApp {
             + "请严格参考完整对话历史；用户已提供的姓名、目标等个人信息要记住并正确引用，不要否认历史中已出现的内容。"
             + "每次回复都会尽量精简，不做多余阐述。";
 
-
     public FitApp(ChatModel DashScopeChatModel, DBChatMemory dbChatMemory) {
-//        //基于内存记忆的会话
-//        InMemoryChatMemoryRepository chatMemoryRepository = new InMemoryChatMemoryRepository();
-//        MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
-//                .chatMemoryRepository(chatMemoryRepository)
-//                .maxMessages(20) // 默认窗口大小为 20 条消息
-//                .build();
-//        // 基于 Redis 的会话记忆（带 TTL）
-//        ChatMemory chatRedisMemory = new RedisChatMemory(redisTemplate);
         this.dbChatMemory = dbChatMemory;
         chatClient = ChatClient.builder(DashScopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT)
@@ -70,14 +68,12 @@ public class FitApp {
                 .build();
     }
 
-    public String doChat(String message, String chatId) {
-        // 使用原始用户消息，避免查询重写破坏对话记忆（如「我叫 xxx」被改写）
+    public String doChat(User user, String message, String chatId) {
+        String memoryKey = prepareConversation(user, chatId, message);
         ChatResponse response = chatClient
                 .prompt()
-                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, chatId))
-                //.advisors(FitAppRagCustomAdvisorFactory.createFitAppRagCustomAdvisor(fitAppVectorStore,"新手"))
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
                 .advisors(QuestionAnswerAdvisor.builder(fitAppVectorStore).build())
-                //.advisors(fitAppRagCloudAdvisor)//云知识库
                 .toolCallbacks(toolCallbackProvider)
                 .user(message)
                 .call()
@@ -87,30 +83,92 @@ public class FitApp {
         return content;
     }
 
-    public Flux<String> doChatByStream(String message, String chatId) {
+    public Flux<String> doChatByStream(User user, String message, String chatId) {
+        String memoryKey = prepareConversation(user, chatId, message);
         return chatClient
                 .prompt()
-                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, chatId))
-                //.advisors(FitAppRagCustomAdvisorFactory.createFitAppRagCustomAdvisor(fitAppVectorStore,"新手"))
+                .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, memoryKey))
                 .advisors(QuestionAnswerAdvisor.builder(fitAppVectorStore).build())
-                //.advisors(fitAppRagCloudAdvisor)//云知识库
                 .toolCallbacks(toolCallbackProvider)
                 .user(message)
                 .stream()
                 .content();
     }
 
-    /**
-     * 拉取指定会话历史，供前端刷新后恢复消息列表
-     */
-    public List<ChatHistoryMessageVO> listHistory(String chatId) {
-        if (!StringUtils.hasText(chatId)) {
-            return List.of();
+    private String prepareConversation(User user, String chatId, String message) {
+        ThrowUtils.throwIf(user == null || user.getId() == null, ErrorCode.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(!StringUtils.hasText(chatId), ErrorCode.PARAMS_ERROR, "chatId 不能为空");
+        ensureSession(user.getId(), chatId, message);
+        return DBChatMemory.memoryKey(user.getId(), chatId);
+    }
+
+    private void ensureSession(Long userId, String chatId, String message) {
+        ChatSession existing = chatSessionMapper.selectOneByQuery(
+                QueryWrapper.create().eq("chatId", chatId).limit(1)
+        );
+        LocalDateTime now = LocalDateTime.now();
+        if (existing == null) {
+            chatSessionMapper.insert(ChatSession.builder()
+                    .chatId(chatId)
+                    .userId(userId)
+                    .title(buildTitle(message))
+                    .createTime(now)
+                    .updateTime(now)
+                    .build());
+            return;
         }
-        return dbChatMemory.listEntities(chatId, HISTORY_LIMIT).stream()
+        ThrowUtils.throwIf(!userId.equals(existing.getUserId()),
+                ErrorCode.NO_AUTH_ERROR, "无权访问该会话");
+        existing.setUpdateTime(now);
+        if ((!StringUtils.hasText(existing.getTitle()) || "新对话".equals(existing.getTitle()))
+                && StringUtils.hasText(message)) {
+            existing.setTitle(buildTitle(message));
+        }
+        chatSessionMapper.update(existing);
+    }
+
+    private String buildTitle(String text) {
+        if (!StringUtils.hasText(text)) {
+            return "新对话";
+        }
+        String compact = text.replaceAll("\\s+", " ").trim();
+        return compact.length() > 30 ? compact.substring(0, 30) + "…" : compact;
+    }
+
+    public List<ChatHistoryMessageVO> listHistory(User user, String chatId) {
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_LOGIN_ERROR);
+        ThrowUtils.throwIf(!StringUtils.hasText(chatId), ErrorCode.PARAMS_ERROR, "chatId 不能为空");
+        assertSessionOwner(user.getId(), chatId);
+        return dbChatMemory.listEntities(user.getId(), chatId, HISTORY_LIMIT).stream()
                 .filter(this::isVisibleHistoryMessage)
                 .map(this::toHistoryVO)
                 .toList();
+    }
+
+    public List<ChatSessionVO> listSessions(User user) {
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_LOGIN_ERROR);
+        List<ChatSession> sessions = chatSessionMapper.selectListByQuery(
+                QueryWrapper.create()
+                        .eq("userId", user.getId())
+                        .orderBy("updateTime", false)
+                        .limit(50)
+        );
+        if (sessions == null || sessions.isEmpty()) {
+            return List.of();
+        }
+        return sessions.stream().map(this::toSessionVO).toList();
+    }
+
+    private void assertSessionOwner(Long userId, String chatId) {
+        ChatSession session = chatSessionMapper.selectOneByQuery(
+                QueryWrapper.create().eq("chatId", chatId).limit(1)
+        );
+        if (session == null) {
+            // 允许空会话（新建尚未发言）——只要不是别人占用的 chatId
+            return;
+        }
+        ThrowUtils.throwIf(!userId.equals(session.getUserId()),
+                ErrorCode.NO_AUTH_ERROR, "无权访问该会话");
     }
 
     private boolean isVisibleHistoryMessage(ChatMessage message) {
@@ -128,6 +186,12 @@ public class FitApp {
                 .build();
     }
 
+    private ChatSessionVO toSessionVO(ChatSession session) {
+        return ChatSessionVO.builder()
+                .chatId(session.getChatId())
+                .title(StrUtil.blankToDefault(session.getTitle(), "新对话"))
+                .createTime(session.getCreateTime())
+                .updateTime(session.getUpdateTime())
+                .build();
+    }
 }
-
-

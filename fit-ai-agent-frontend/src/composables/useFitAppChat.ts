@@ -3,7 +3,11 @@ import { v4 as uuidv4 } from 'uuid'
 import { buildFitAppStreamUrl } from '@/api/chat'
 import type { ChatMessage } from '@/types/chat'
 
-export function useFitAppChat(messages: { value: ChatMessage[] }, isStreaming: { value: boolean }) {
+export function useFitAppChat(
+  messages: { value: ChatMessage[] },
+  isStreaming: { value: boolean },
+  getChatId: () => string,
+) {
   let eventSource: EventSource | null = null
 
   function stop() {
@@ -33,7 +37,7 @@ export function useFitAppChat(messages: { value: ChatMessage[] }, isStreaming: {
     })
 
     isStreaming.value = true
-    const url = buildFitAppStreamUrl(message.trim())
+    const url = buildFitAppStreamUrl(message.trim(), getChatId())
     eventSource = new EventSource(url)
 
     eventSource.onmessage = (e) => {
@@ -48,7 +52,7 @@ export function useFitAppChat(messages: { value: ChatMessage[] }, isStreaming: {
       if (msg) {
         msg.status = 'complete'
         if (!msg.content) {
-          msg.content = '回复中断，请重试'
+          msg.content = '回复中断，请先登录后重试'
           msg.status = 'error'
         }
       }

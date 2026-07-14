@@ -1,17 +1,23 @@
-import request from './request'
-import { getFitAppChatId } from '@/utils/chatId'
-import type { ChatHistoryMessage } from '@/types/chat'
+import request, { getToken } from './request'
+import type { ChatHistoryMessage, ChatSessionItem } from '@/types/chat'
 
-export function buildFitAppStreamUrl(message: string): string {
-  const chatId = getFitAppChatId()
+export function buildFitAppStreamUrl(message: string, chatId: string): string {
   const params = new URLSearchParams({ message, chatId })
+  const token = getToken()
+  if (token) {
+    params.set('token', token)
+  }
   return `/api/fitai/fitapp/chat/stream?${params.toString()}`
 }
 
-export function getFitAppChatHistory(chatId?: string) {
+export function getFitAppChatHistory(chatId: string) {
   return request.get<unknown, ChatHistoryMessage[]>('/fitai/fitapp/chat/history', {
-    params: { chatId: chatId || getFitAppChatId() },
+    params: { chatId },
   })
+}
+
+export function getFitAppChatSessions() {
+  return request.get<unknown, ChatSessionItem[]>('/fitai/fitapp/chat/sessions')
 }
 
 export function buildManusStreamUrl(message: string): string {

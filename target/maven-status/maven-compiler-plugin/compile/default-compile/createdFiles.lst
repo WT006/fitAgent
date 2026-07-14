@@ -34,10 +34,12 @@ org\example\fitaiagent\model\dto\UserRegisterRequest.class
 org\example\fitaiagent\chatMemory\DBChatMemory.class
 org\example\fitaiagent\common\DeleteRequest.class
 org\example\fitaiagent\common\PageRequest.class
+org\example\fitaiagent\mapper\ChatSessionMapper.class
 org\example\fitaiagent\service\impl\PlanAiServiceImpl.class
 org\example\fitaiagent\model\vo\PlanDayTasksVO.class
 org\example\fitaiagent\model\vo\ChatHistoryMessageVO.class
 org\example\fitaiagent\tools\ToolRegistration.class
+org\example\fitaiagent\model\vo\ChatSessionVO.class
 org\example\fitaiagent\model\entity\DailyTask.class
 org\example\fitaiagent\chatMemory\RedisChatMemory.class
 org\example\fitaiagent\model\pojo\PlanningSession.class
@@ -50,9 +52,11 @@ org\example\fitaiagent\factory\FitAppContextualQueryAugmenterFactory.class
 org\example\fitaiagent\tools\TerminalOperationTool.class
 org\example\fitaiagent\model\entity\ChatMessage.class
 org\example\fitaiagent\controller\UserController.class
+org\example\fitaiagent\model\vo\ChatSessionVO$ChatSessionVOBuilder.class
 org\example\fitaiagent\exception\GlobalExceptionHandler.class
 org\example\fitaiagent\model\vo\PdfDownloadVO$PdfDownloadVOBuilder.class
 org\example\fitaiagent\service\PlanService.class
+org\example\fitaiagent\model\entity\ChatSession.class
 org\example\fitaiagent\mapper\PlanMapper.class
 org\example\fitaiagent\model\entity\Plan$PlanBuilder.class
 org\example\fitaiagent\tools\WebScrapingTool.class
@@ -68,6 +72,7 @@ org\example\fitaiagent\model\entity\DailyTask$DailyTaskBuilder.class
 org\example\fitaiagent\config\WebMvcConfig$AuthInterceptor.class
 org\example\fitaiagent\rag\MyKeywordMetadataEnricher.class
 org\example\fitaiagent\exception\BusinessException.class
+org\example\fitaiagent\model\entity\ChatSession$ChatSessionBuilder.class
 org\example\fitaiagent\constant\FileConstant.class
 org\example\fitaiagent\mapper\UserMapper.class
 org\example\fitaiagent\model\vo\ChatHistoryMessageVO$ChatHistoryMessageVOBuilder.class

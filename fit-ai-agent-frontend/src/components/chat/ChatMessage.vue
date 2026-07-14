@@ -96,7 +96,7 @@ async function handleDownload(downloadKey: string) {
               <FileText class="h-5 w-5" />
             </div>
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-text">已为你生成锻炼计划 PDF</p>
+              <p class="text-sm font-medium text-text">已为你生成PDF</p>
               <p class="mt-0.5 truncate text-xs text-text-muted">{{ file.displayName }}</p>
               <button
                 type="button"

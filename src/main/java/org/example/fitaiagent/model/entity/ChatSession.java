@@ -15,14 +15,14 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 对话记忆消息
+ * 健康咨询会话
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("chat_message")
-public class ChatMessage implements Serializable {
+@Table("chat_session")
+public class ChatSession implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -30,30 +30,18 @@ public class ChatMessage implements Serializable {
     @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private Long id;
 
-    /**
-     * 所属用户
-     */
-    @Column("userId")
-    private Long userId;
-
-    /**
-     * 会话 id
-     */
     @Column("chatId")
     private String chatId;
 
-    /**
-     * 消息类型：USER / ASSISTANT / SYSTEM
-     */
-    @Column("type")
-    private String type;
+    @Column("userId")
+    private Long userId;
 
-    /**
-     * 消息内容
-     */
-    @Column("text")
-    private String text;
+    @Column("title")
+    private String title;
 
     @Column("createTime")
     private LocalDateTime createTime;
+
+    @Column("updateTime")
+    private LocalDateTime updateTime;
 }

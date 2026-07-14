@@ -96,8 +96,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User getLoginUser(HttpServletRequest request) {
         String authorization = request.getHeader(UserConstant.AUTHORIZATION_HEADER);
         String token = JwtUtils.extractToken(authorization);
-        Long userId = JwtUtils.getUserId(token);
+        return getLoginUserByToken(token);
+    }
 
+    @Override
+    public User getLoginUserByToken(String token) {
+        ThrowUtils.throwIf(StrUtil.isBlank(token), ErrorCode.NOT_LOGIN_ERROR);
+        Long userId = JwtUtils.getUserId(token);
         User user = this.getById(userId);
         ThrowUtils.throwIf(user == null, ErrorCode.NOT_LOGIN_ERROR, "用户不存在");
         return user;

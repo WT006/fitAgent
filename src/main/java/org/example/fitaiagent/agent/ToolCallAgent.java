@@ -124,7 +124,11 @@ public class ToolCallAgent extends ReActAgent {
         }
 
         String resultsForLog = toolResponseMessage.getResponses().stream()
-                .map(response -> "工具 " + response.name() + " 完成了它的任务！结果: " + response.responseData())
+                .map(response -> {
+                    String data = StrUtil.blankToDefault(response.responseData(), "");
+                    String preview = data.length() > 300 ? data.substring(0, 300) + "…(日志已截断)" : data;
+                    return "工具 " + response.name() + " 完成了它的任务！结果: " + preview;
+                })
                 .collect(Collectors.joining("\n"));
         // 前端只展示简短状态；PDF 成功时保留 downloadKey 供下载按钮解析
         String resultsForClient = toolResponseMessage.getResponses().stream()

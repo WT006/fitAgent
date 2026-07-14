@@ -35,6 +35,7 @@ D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\FitAiAgentApplicati
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\job\CosPdfCleanupJob.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\manager\CosManager.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\mapper\ChatMessageMapper.java
+D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\mapper\ChatSessionMapper.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\mapper\DailyTaskMapper.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\mapper\PlanMapper.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\mapper\UserMapper.java
@@ -45,12 +46,14 @@ D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\dto\UserLogin
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\dto\UserQueryRequest.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\dto\UserRegisterRequest.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\entity\ChatMessage.java
+D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\entity\ChatSession.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\entity\DailyTask.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\entity\Plan.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\entity\User.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\pojo\ChatEntity.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\pojo\PlanningSession.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\vo\ChatHistoryMessageVO.java
+D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\vo\ChatSessionVO.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\vo\DailyTaskVO.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\vo\LoginUserVO.java
 D:\Project\fit-ai-agent\src\main\java\org\example\fitaiagent\model\vo\PdfDownloadVO.java

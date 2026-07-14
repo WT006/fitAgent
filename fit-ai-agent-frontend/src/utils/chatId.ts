@@ -1,33 +1,53 @@
 import { v4 as uuidv4 } from 'uuid'
 
-const FITAPP_CHAT_ID_KEY = 'fitapp_chat_id'
+const LEGACY_KEY = 'fitapp_chat_id'
+
+function storageKey(userId?: string | number | null) {
+  if (userId == null || userId === '') {
+    return LEGACY_KEY
+  }
+  return `fitapp_chat_id_${userId}`
+}
 
 export function generateChatId(): string {
   return uuidv4()
 }
 
 /**
- * 健康咨询会话 ID：用 localStorage 跨刷新/关标签保持，便于恢复历史
+ * 按用户隔离的健康咨询会话 ID
  */
-export function getFitAppChatId(): string {
-  let chatId = localStorage.getItem(FITAPP_CHAT_ID_KEY)
-  if (!chatId) {
-    // 兼容旧版 sessionStorage
-    chatId = sessionStorage.getItem(FITAPP_CHAT_ID_KEY)
-    if (chatId) {
-      localStorage.setItem(FITAPP_CHAT_ID_KEY, chatId)
-      sessionStorage.removeItem(FITAPP_CHAT_ID_KEY)
-    } else {
-      chatId = generateChatId()
-      localStorage.setItem(FITAPP_CHAT_ID_KEY, chatId)
+export function getFitAppChatId(userId?: string | number | null): string {
+  const key = storageKey(userId)
+  let chatId = localStorage.getItem(key)
+  if (!chatId && userId != null) {
+    // 兼容未按用户隔离的旧 key（仅迁移给当前用户一次）
+    const legacy = localStorage.getItem(LEGACY_KEY) || sessionStorage.getItem(LEGACY_KEY)
+    if (legacy) {
+      chatId = legacy
+      localStorage.setItem(key, chatId)
+      localStorage.removeItem(LEGACY_KEY)
+      sessionStorage.removeItem(LEGACY_KEY)
     }
+  }
+  if (!chatId) {
+    chatId = generateChatId()
+    localStorage.setItem(key, chatId)
   }
   return chatId
 }
 
-export function resetFitAppChatId(): string {
+export function setFitAppChatId(chatId: string, userId?: string | number | null): void {
+  localStorage.setItem(storageKey(userId), chatId)
+}
+
+export function resetFitAppChatId(userId?: string | number | null): string {
   const chatId = generateChatId()
-  localStorage.setItem(FITAPP_CHAT_ID_KEY, chatId)
-  sessionStorage.removeItem(FITAPP_CHAT_ID_KEY)
+  setFitAppChatId(chatId, userId)
   return chatId
+}
+
+export function clearFitAppChatId(userId?: string | number | null): void {
+  localStorage.removeItem(storageKey(userId))
+  localStorage.removeItem(LEGACY_KEY)
+  sessionStorage.removeItem(LEGACY_KEY)
 }

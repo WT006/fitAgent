@@ -23,7 +23,7 @@ const navItems = computed(() => {
 
 const isActive = (path: string) => {
   if (path === '/chat') {
-    return route.path === '/chat' && route.query.mode !== 'planning'
+    return route.path.startsWith('/chat') && route.query.mode !== 'planning'
   }
   return route.path === path || route.path.startsWith(path + '/')
 }

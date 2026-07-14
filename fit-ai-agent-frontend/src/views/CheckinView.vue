@@ -76,13 +76,13 @@ function handlePlanClick() {
   if (progress.value?.hasPlan) {
     showReplanDialog.value = true
   } else {
-    router.push('/chat?mode=planning')
+    router.push('/chat/consult?mode=planning')
   }
 }
 
 function handleReplanConfirm() {
   showReplanDialog.value = false
-  router.push('/chat?mode=planning&replan=1')
+  router.push('/chat/consult?mode=planning&replan=1')
 }
 
 onMounted(loadPage)

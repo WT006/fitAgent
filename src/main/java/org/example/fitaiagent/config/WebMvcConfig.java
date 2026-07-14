@@ -30,9 +30,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/user/login",
                         "/user/register",
-                        // Manus / FitApp 流式接口使用 EventSource，不便带 Authorization
-                        "/fitai/**",
-                        // /files/** 需登录，不在此排除
+                        // EventSource 流式接口通过 query token 鉴权
+                        "/fitai/fitapp/chat/stream",
+                        "/fitai/fitapp/chat/sync",
+                        "/fitai/manus/chat",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
